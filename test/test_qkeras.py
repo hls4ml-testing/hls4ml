@@ -5,10 +5,10 @@ import hls4ml
 from qkeras import *
 from tensorflow.keras.layers import Input
 
-# ternary_tanh is not supported in qkeras
+# ternary_tanh
 qactivation_list = ["quantized_relu", "quantized_tanh", "binary_tanh", "quantized_bits"]
 qactivation_stochastic_kernel = ["stochastic_ternary", "stochastic_binary"]
-qactivation_stochastic_bias = ["ternary", "binary"]
+qactivation_stochastic_bias = ["ternary", "binary", None]
 
 quantized_bit_list = ["1", "2", "3", "4", "5", "6", "7", "8"]
 quantized_integer_list = ["0", "1", "2", "3"]
@@ -67,3 +67,16 @@ def test_activation(activation):
             if "quantized" in activation
             else activation
         )
+
+
+def test_conv2d():
+    x = x_in = Input((28, 28, 1))
+    x = QConv2D(
+        18, (3, 3), kernel_quantizer="stochastic_ternary", bias_quantizer="quantized_bits(4)", name="conv2d_1"
+    )(x)
+    x = QActivation("quantized_relu")(x)
+
+    model = Model(inputs=x_in, outputs=x)
+    hls_model = hls4ml.converters.convert_from_keras_model(model)
+
+    assert len(model.layers) + 1 == len(hls_model.get_layers())
