@@ -67,4 +67,3 @@ def test_activation(activation):
             if "quantized" in activation
             else activation
         )
-
