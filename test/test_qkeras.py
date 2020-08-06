@@ -69,6 +69,7 @@ def test_activation(activation):
         )
 
 
+# TODO Add test for all conv2d params
 def test_conv2d():
     x = x_in = Input((28, 28, 1))
     x = QConv2D(
