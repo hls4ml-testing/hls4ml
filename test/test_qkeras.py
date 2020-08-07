@@ -7,7 +7,7 @@ from tensorflow.keras.layers import Input
 
 # ternary_tanh
 qactivation_list = ["quantized_relu", "quantized_tanh", "binary_tanh", "quantized_bits"]
-qactivation_stochastic_kernel = ["stochastic_ternary", "stochastic_binary"]
+qactivation_stochastic_kernel = ["stochastic_ternary", "stochastic_binary", "quantized_bits"]
 qactivation_stochastic_bias = ["ternary", "binary", None]
 
 quantized_bit_list = ["1", "2", "3", "4", "5", "6", "7", "8"]
@@ -29,9 +29,7 @@ def test_dense(activation_bit, activation_int):
     model = Model(inputs=x_in, outputs=x)
     hls_model = hls4ml.converters.convert_from_keras_model(model)
 
-    assert len(model.layers) + 1 == len(hls_model.get_layers())
-    assert list(hls_model.get_layers())[1].attributes["class_name"] == model.layers[1].__class__.__name__
-    assert list(hls_model.get_layers())[2].attributes["class_name"] == "Alpha"
+    _test_helper(model, hls_model)
 
 
 @pytest.mark.parametrize("activation_kernel", qactivation_stochastic_kernel)
@@ -44,9 +42,7 @@ def test_dense_stochastic(activation_kernel, activation_bias):
     model = Model(inputs=x_in, outputs=x)
     hls_model = hls4ml.converters.convert_from_keras_model(model)
 
-    assert len(model.layers) + 1 == len(hls_model.get_layers())
-    assert list(hls_model.get_layers())[1].attributes["class_name"] == model.layers[1].__class__.__name__
-    assert list(hls_model.get_layers())[2].attributes["class_name"] == "Alpha"
+    _test_helper(model, hls_model)
 
 
 @pytest.mark.parametrize("activation", qactivation_list)
@@ -80,4 +76,23 @@ def test_conv2d():
     model = Model(inputs=x_in, outputs=x)
     hls_model = hls4ml.converters.convert_from_keras_model(model)
 
+    _test_helper(model, hls_model)
+
+
+@pytest.mark.parametrize("activation_kernel", qactivation_stochastic_kernel)
+@pytest.mark.parametrize("activation_bias", qactivation_stochastic_bias)
+def test_conv1d_stochastic(activation_kernel, activation_bias):
+    x = x_in = Input((28, 1))
+    x = QConv1D(10, 3, kernel_quantizer=activation_kernel, bias_quantizer=activation_bias)(x)
+
+    model = Model(inputs=x_in, outputs=x)
+    hls_model = hls4ml.converters.convert_from_keras_model(model)
+
+    _test_helper(model, hls_model)
+
+
+def _test_helper(model, hls_model):
     assert len(model.layers) + 1 == len(hls_model.get_layers())
+    assert list(hls_model.get_layers())[1].attributes["class_name"] == model.layers[1].__class__.__name__
+    assert list(hls_model.get_layers())[2].attributes["class_name"] == "Alpha"
+
