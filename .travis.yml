@@ -1,0 +1,10 @@
+language: python
+
+services:
+  - docker
+
+before_install:
+  - docker build -t guyzsarun/hls4ml -f Dockerfile.dev .
+
+script:
+  - docker run guyzsarun/hls4ml python3 -m pytest .

@@ -1,0 +1,16 @@
+FROM tensorflow/tensorflow:latest
+
+WORKDIR /code
+
+RUN apt update
+RUN apt install -y graphviz 
+RUN apt install -y python-pydot python-pydot-ng 
+RUN apt install -y git
+
+RUN git clone https://github.com/google/qkeras
+RUN cd qkeras && pip3 install .
+RUN rm -rf qkeras
+
+RUN pip3 install hls4ml pyparsing torch torchvision
+
+COPY . .
