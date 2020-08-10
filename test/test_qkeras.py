@@ -65,11 +65,12 @@ def test_activation(activation):
         )
 
 
-# TODO Add test for all conv2d params
-def test_conv2d():
+@pytest.mark.parametrize("activation_kernel", qactivation_stochastic_kernel)
+@pytest.mark.parametrize("activation_bias", qactivation_stochastic_bias)
+def test_conv2d_stochastic(activation_kernel, activation_bias):
     x = x_in = Input((28, 28, 1))
     x = QConv2D(
-        18, (3, 3), kernel_quantizer="stochastic_ternary", bias_quantizer="quantized_bits(4)", name="conv2d_1"
+        18, (3, 3), kernel_quantizer=activation_kernel, bias_quantizer=activation_bias
     )(x)
     x = QActivation("quantized_relu")(x)
 
