@@ -3,8 +3,12 @@ language: python
 services:
   - docker
 
-before_install:
-  - docker build -t guyzsarun/hls4ml -f Dockerfile.dev .
+install:
+  - docker build -t hls4ml -f Dockerfile.dev .
+  - docker run --rm -d --name hls4ml hls4ml
 
 script:
-  - docker run guyzsarun/hls4ml python3 -m pytest .
+  - docker ps | grep -q hls4ml
+  - pip install h5py
+  - pip list
+  - python3 -m pytest
