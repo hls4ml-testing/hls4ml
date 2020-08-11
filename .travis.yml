@@ -1,14 +1,7 @@
-language: python
-
 services:
   - docker
 
 install:
   - docker build -t hls4ml -f Dockerfile.dev .
-  - docker run --rm -d --name hls4ml hls4ml
+  - docker run --rm hls4ml python3 -m pytest
 
-script:
-  - docker ps | grep -q hls4ml
-  - pip install h5py
-  - pip list
-  - python3 -m pytest
