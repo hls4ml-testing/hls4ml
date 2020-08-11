@@ -1,7 +1,15 @@
 services:
   - docker
 
-install:
-  - docker build -t hls4ml -f Dockerfile.dev .
-  - docker run --rm hls4ml python3 -m pytest
-
+jobs:
+  include:
+    - stage: build docker image
+      script:
+      - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+      - docker build -t hls4ml -f Dockerfile.dev .
+      - docker images
+      - docker tag hls4ml $DOCKER_USERNAME/hls4ml
+      - docker push $DOCKER_USERNAME/hls4ml
+    - stage: test
+      script: docker run --rm $DOCKER_USERNAME/hls4ml python3 -m pytest . 
+    - script: docker run --rm $DOCKER_USERNAME/hls4ml python3 -m pytest . 
