@@ -14,3 +14,5 @@ RUN rm -rf qkeras
 RUN pip3 install hls4ml pyparsing torch torchvision pytest
 
 COPY . .
+
+ENTRYPOINT ["python3","-m","pytest","."]
