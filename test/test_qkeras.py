@@ -1,7 +1,6 @@
 import pytest
-
+import numpy as np
 import hls4ml
-
 from qkeras import *
 from tensorflow.keras.layers import Input
 
@@ -15,10 +14,12 @@ qactivation_stochastic_bias = ['ternary', 'binary', None]
 quantized_bit_list = ['1', '2', '3', '4', '5', '6', '7', '8']
 quantized_integer_list = ['0', '1', '2', '3']
 
+np.random.seed(42)
 
 @pytest.mark.parametrize('activation_int', quantized_integer_list)
 @pytest.mark.parametrize('activation_bit', quantized_bit_list)
 def test_dense(activation_bit, activation_int):
+    test_input=np.random.randn(1,10)
     x = x_in = Input(10)
     x = QDense(
         10,
@@ -30,31 +31,53 @@ def test_dense(activation_bit, activation_int):
 
     model = Model(inputs=x_in, outputs=x)
     hls_model = hls4ml.converters.convert_from_keras_model(model)
-    
-    _test_helper(model, hls_model)
+    hls_model.compile()
+
+    model_pred=model.predict(test_input)
+    hls_pred=hls_model.predict(test_input)
+
+    assert(_output_shape(model_pred,hls_pred))
+    assert(_layer_number(model,hls_model))
+    assert(_alpha(model,hls_model))
 
 
 @pytest.mark.parametrize('activation_kernel', qactivation_stochastic_kernel)
 @pytest.mark.parametrize('activation_bias', qactivation_stochastic_bias)
 def test_dense_stochastic(activation_kernel, activation_bias):
+    test_input=np.random.randn(1,10)
+
     x = x_in = Input(10)
     x = QDense(10, kernel_quantizer=activation_kernel, bias_quantizer=activation_bias, name='Qdense',)(x)
     x = QActivation('quantized_relu')(x)
 
     model = Model(inputs=x_in, outputs=x)
     hls_model = hls4ml.converters.convert_from_keras_model(model)
+    hls_model.compile()
+    
+    model_pred=model.predict(test_input)
+    hls_pred=hls_model.predict(test_input)
 
-    _test_helper(model, hls_model)
+    assert(_output_shape(model_pred,hls_pred))
+    assert(_layer_number(model,hls_model))
+    assert(_alpha(model,hls_model))
 
 
 @pytest.mark.parametrize('activation', qactivation_list)
 def test_activation(activation):
+    test_input=np.random.randn(1,10)
+
     x = x_in = Input(10)
     x = QDense(10, kernel_quantizer='quantized_bits(3,0,1)', bias_quantizer='quantized_bits(3)', name='Qdense',)(x)
     x = QActivation(activation)(x)
 
     model = Model(inputs=x_in, outputs=x)
     hls_model = hls4ml.converters.convert_from_keras_model(model)
+    hls_model.compile()
+
+    model_pred=model.predict(test_input)
+    hls_pred=hls_model.predict(test_input)
+
+    assert(_output_shape(model_pred,hls_pred))
 
     if activation == 'quantized_bits':
         assert len(model.layers) == len(hls_model.get_layers())
@@ -78,8 +101,10 @@ def test_conv2d_stochastic(activation_kernel, activation_bias):
 
     model = Model(inputs=x_in, outputs=x)
     hls_model = hls4ml.converters.convert_from_keras_model(model)
+    hls_model.compile()
 
-    _test_helper(model, hls_model)
+    assert(_layer_number(model,hls_model))
+    assert(_alpha(model,hls_model))
 
 
 @pytest.mark.parametrize('activation_kernel', qactivation_stochastic_kernel)
@@ -90,11 +115,8 @@ def test_conv1d_stochastic(activation_kernel, activation_bias):
 
     model = Model(inputs=x_in, outputs=x)
     hls_model = hls4ml.converters.convert_from_keras_model(model)
+    hls_model.compile()
 
-    _test_helper(model, hls_model)
-
-
-def _test_helper(model, hls_model):
     assert(_layer_number(model,hls_model))
     assert(_alpha(model,hls_model))
 
