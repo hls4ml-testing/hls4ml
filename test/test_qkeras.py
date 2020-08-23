@@ -5,6 +5,8 @@ import hls4ml
 from qkeras import *
 from tensorflow.keras.layers import Input
 
+from utils import *
+
 # ternary_tanh
 qactivation_list = ['quantized_relu', 'quantized_tanh', 'binary_tanh', 'quantized_bits']
 qactivation_stochastic_kernel = ['stochastic_ternary', 'stochastic_binary', 'quantized_bits']
@@ -28,7 +30,7 @@ def test_dense(activation_bit, activation_int):
 
     model = Model(inputs=x_in, outputs=x)
     hls_model = hls4ml.converters.convert_from_keras_model(model)
-
+    
     _test_helper(model, hls_model)
 
 
@@ -93,7 +95,6 @@ def test_conv1d_stochastic(activation_kernel, activation_bias):
 
 
 def _test_helper(model, hls_model):
-    assert len(model.layers) + 1 == len(hls_model.get_layers())
-    assert list(hls_model.get_layers())[1].attributes['class_name'] == model.layers[1].__class__.__name__
-    assert list(hls_model.get_layers())[2].attributes['class_name'] == 'Alpha'
+    assert(_layer_number(model,hls_model))
+    assert(_alpha(model,hls_model))
 
