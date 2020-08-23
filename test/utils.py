@@ -2,7 +2,18 @@ import hls4ml
 
 from qkeras import *
 
-__all__=['_output_shape','_layer_number','_alpha']
+__all__=['_accuracy','_output_shape','_layer_number','_alpha']
+
+def _accuracy(prediction1,prediction2,percent):
+    prediction1=prediction1[0]
+    c=[]
+    for i in range(len(prediction2)):
+        if prediction1[i]==prediction2[i]:
+            c.append(0)
+        else:
+            c.append(np.abs(prediction2[i] - prediction1[i]) * 100 /prediction1[i])
+
+    return np.average(c)<percent
 
 def _output_shape(prediction1,prediction2):
     return len(prediction1[0])==len(prediction2)

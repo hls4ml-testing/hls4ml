@@ -1,4 +1,6 @@
 import pytest
+import random
+import string
 import numpy as np
 import hls4ml
 from qkeras import *
@@ -8,21 +10,23 @@ from utils import *
 
 # ternary_tanh
 qactivation_list = ['quantized_relu', 'quantized_tanh', 'binary_tanh', 'quantized_bits']
-qactivation_stochastic_kernel = ['stochastic_ternary', 'stochastic_binary', 'quantized_bits']
-qactivation_stochastic_bias = ['ternary', 'binary', None]
+qactivation_stochastic_kernel = ['stochastic_ternary', 'stochastic_binary']
+qactivation_stochastic_bias = ['ternary', 'binary']
+quantized_bit_list = ['2', '3', '4', '5', '6', '7', '8']
+quantized_integer_list = ['0', '1']
 
-quantized_bit_list = ['1', '2', '3', '4', '5', '6', '7', '8']
-quantized_integer_list = ['0', '1', '2', '3']
+letters = string.ascii_lowercase
 
-np.random.seed(42)
+# Acceptable accuracy error
+percent_error = 65
 
 @pytest.mark.parametrize('activation_int', quantized_integer_list)
 @pytest.mark.parametrize('activation_bit', quantized_bit_list)
 def test_dense(activation_bit, activation_int):
-    test_input=np.random.randn(1,10)
+    test_input = np.random.randn(1,10)
     x = x_in = Input(10)
     x = QDense(
-        10,
+        16,
         kernel_quantizer='quantized_bits(' + activation_bit + ',' + activation_int + ',1)',
         bias_quantizer='quantized_bits(' + activation_bit + ')',
         name='Qdense',
@@ -30,16 +34,18 @@ def test_dense(activation_bit, activation_int):
     x = QActivation('quantized_relu')(x)
 
     model = Model(inputs=x_in, outputs=x)
-    hls_model = hls4ml.converters.convert_from_keras_model(model)
+    hls_model = hls4ml.converters.convert_from_keras_model(model,project_name=generate_project_name())
     hls_model.compile()
 
     model_pred=model.predict(test_input)
     hls_pred=hls_model.predict(test_input)
 
     assert(_output_shape(model_pred,hls_pred))
+    assert(_accuracy(model_pred,hls_pred,percent_error))
     assert(_layer_number(model,hls_model))
     assert(_alpha(model,hls_model))
 
+    
 
 @pytest.mark.parametrize('activation_kernel', qactivation_stochastic_kernel)
 @pytest.mark.parametrize('activation_bias', qactivation_stochastic_bias)
@@ -51,13 +57,14 @@ def test_dense_stochastic(activation_kernel, activation_bias):
     x = QActivation('quantized_relu')(x)
 
     model = Model(inputs=x_in, outputs=x)
-    hls_model = hls4ml.converters.convert_from_keras_model(model)
+    hls_model = hls4ml.converters.convert_from_keras_model(model,project_name=generate_project_name())
     hls_model.compile()
     
     model_pred=model.predict(test_input)
     hls_pred=hls_model.predict(test_input)
 
     assert(_output_shape(model_pred,hls_pred))
+    assert(_accuracy(model_pred,hls_pred,percent_error))
     assert(_layer_number(model,hls_model))
     assert(_alpha(model,hls_model))
 
@@ -71,13 +78,14 @@ def test_activation(activation):
     x = QActivation(activation)(x)
 
     model = Model(inputs=x_in, outputs=x)
-    hls_model = hls4ml.converters.convert_from_keras_model(model)
+    hls_model = hls4ml.converters.convert_from_keras_model(model,project_name=generate_project_name())
     hls_model.compile()
 
     model_pred=model.predict(test_input)
     hls_pred=hls_model.predict(test_input)
 
     assert(_output_shape(model_pred,hls_pred))
+    assert(_accuracy(model_pred,hls_pred,percent_error))
 
     if activation == 'quantized_bits':
         assert len(model.layers) == len(hls_model.get_layers())
@@ -100,7 +108,7 @@ def test_conv2d_stochastic(activation_kernel, activation_bias):
     x = QActivation('quantized_relu')(x)
 
     model = Model(inputs=x_in, outputs=x)
-    hls_model = hls4ml.converters.convert_from_keras_model(model)
+    hls_model = hls4ml.converters.convert_from_keras_model(model,project_name=generate_project_name())
     hls_model.compile()
 
     assert(_layer_number(model,hls_model))
@@ -120,3 +128,8 @@ def test_conv1d_stochastic(activation_kernel, activation_bias):
     assert(_layer_number(model,hls_model))
     assert(_alpha(model,hls_model))
 
+
+# NOTE : to be removed
+def generate_project_name():
+    project_name=''.join(random.choice(letters) for i in range(10))
+    return project_name
